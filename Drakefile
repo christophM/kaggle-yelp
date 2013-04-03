@@ -1,0 +1,35 @@
+; extract the tgz files
+%extract <- ./data/yelp_test_set.tgz  
+   tar -xvf $INPUT 
+   mv *test*.json ./data/test/
+
+%extract <- ./data/yelp_academic_dataset.tgz  
+   tar -xvf $INPUT 
+   mv *academic*.json ./data/train/
+
+
+;; convert from json to csv
+%convertTrain <- 
+   python src/python/convert.py "./data/train/*.json"
+
+%convertTest <- 
+   python src/python/convert.py "./data/test/*.json"
+
+
+
+;; build the features ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+%features <- 
+   R CMD BATCH "src/R/read.R"
+
+%features, %user <- 
+   R CMD BATCH "src/R/user-features.R"
+
+%features, %business <- 
+   R CMD BATCH "src/R/business-features.R"
+
+%features, %review <- 
+   R CMD BATCH "src/R/review-features.R"
+
+
+
+
