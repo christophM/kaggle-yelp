@@ -9,51 +9,61 @@ train_path = data_path + "train/"
 
 print("Reading files: ")
 print("  business")
-businesses_train = pd.read_csv(train_path + "yelp_academic_dataset_business.csv", header = 0)
-businesses_test = pd.read_csv(test_path + "yelp_test_set_business.csv", header = 0)
+businesses_train = pd.read_csv(train_path + "yelp_academic_dataset_business.csv", header = 0, index_col = "business_id")
+businesses_test = pd.read_csv(test_path + "yelp_test_set_business.csv", header = 0, index_col = "business_id")
+business = businesses_train.combine_first(businesses_test)
+business = business.drop_duplicates()
+
 
 print("  checkins")
-checkins_train = pd.read_csv(train_path + "yelp_academic_dataset_checkin.csv", header = 0)
-checkins_test = pd.read_csv(test_path + "yelp_test_set_checkin.csv", header = 0)
+checkins_train = pd.read_csv(train_path + "yelp_academic_dataset_checkin.csv", header = 0, index_col = "business_id")
+checkins_test = pd.read_csv(test_path + "yelp_test_set_checkin.csv", header = 0, index_col = "business_id")
+checkin = checkins_train.combine_first(checkins_test)
+checkin = checkin.fillna(0)
+checkin = checkin.drop("type", axis = 1)
+# new feature: number of checkins 
+checkin['nCheckins'] = checkin.apply(sum, axis = 1)
+checkin = checkin[["nCheckins"]]
+checkin = checkin.drop_duplicates()
+checkin = checkin.reindex(business.index)
+checkin = checkin.fillna(0)
+
+# TODO handle categories
+
+# combine business and checkin information
+business = business.combine_first(checkin)
+business = business.drop(["categories", "full_address", "neighborhoods", "name", "state", "type"], axis = 1)
+city_freq = dict(business.city.value_counts())
+frequent_cities = dict( (k, v) for k, v in city_freq.items() if v > 100).keys()
+business.city = business.city.map(lambda x: x if x in frequent_cities else "Other")
+
+
 
 print("  reviews")
 print("      train")
-reviews_train = pd.read_csv(train_path + "yelp_academic_dataset_review.csv", header = 0)
+reviews_train = pd.read_csv(train_path + "yelp_academic_dataset_review.csv", header = 0, index_col = "review_id")
+reviews_train = reviews_train.drop(["votes_cool", "votes_funny"], axis = 1)
 print("      test")
-reviews_test = pd.read_csv(test_path + "yelp_test_set_review.csv", header = 0)
+reviews_test = pd.read_csv(test_path + "yelp_test_set_review.csv", header = 0, index_col = "review_id")
 
 print("  users")
-users_train = pd.read_csv(train_path + "yelp_academic_dataset_user.csv", header = 0)
-users_test = pd.read_csv(test_path + "yelp_test_set_user.csv", header = 0)
+users_train = pd.read_csv(train_path + "yelp_academic_dataset_user.csv", header = 0, index_col = "user_id")
+#users_train = users_train.drop(["votes_useful", "votes_funny", "votes_cool"], axis = 1)
+users_test = pd.read_csv(test_path + "yelp_test_set_user.csv", header = 0, index_col = "user_id")
 
+## merge users
+user = users_train.combine_first(users_test)
+user["votes_useful_user"] = user.votes_useful
+user = user.drop("votes_useful", axis = 1)
+## add feature
+user["log_review_count"] = user.review_count.map(math.log)
+user["votes_useful_ave"] = user.votes_useful_user / (user.review_count + 1)
+## drop unused
+user = user.drop(["name", "type"], axis = 1)
+user = user.drop_duplicates()
 
-
-# businesses_test =
-
-def processBusinessess(business, checkin):
-    business = business.drop_duplicates()
-    checkin = checkin.drop_duplicates()
-    ## delete unused columns
-    delete_cols = ["categories", "full_address", "neighborhoods", "name", "state", "type"]
-    business = business.drop(delete_cols, axis = 1)
-    ## aggregate cities
-    city_freq = dict(business.city.value_counts())
-    frequent_cities = dict( (k, v) for k, v in city_freq.items() if v > 100).keys()
-    business.city = business.city.map(lambda x: x if x in frequent_cities else "Other")
-    ## aggregate checkins
-    # drop type variable
-    checkin = checkin.drop("type", axis = 1)
-    # replace NaN with 0 as reported in forum
-    checkin = checkin.fillna(0)
-    checkin['nCheckins'] = checkin.apply(lambda row: sum(row[2:]), axis = 1)
-    ## drop checkin info
-    checkin = checkin[['business_id', 'nCheckins']]
-    ## merge business and checkin data
-    business = pd.merge(business, checkin, how = "left", on = "business_id")
-    business["nCheckins"] = business.nCheckins.fillna(0)
-    return (business)
-
-
+def imputeMedian(column):
+    return column.fillna(column.median())
 
 def processReviews(reviews):
     ## some date features
@@ -63,39 +73,35 @@ def processReviews(reviews):
     reviews['weekday'] = reviews.date.map(lambda x: x.weekday())
     ## drop the text
     reviews = reviews.drop(["text", "type"], axis = 1)
-    return(reviews)
+    ## merge with user and business
+    reviews = reviews.reset_index()
+    res = pd.merge(reviews, business.reset_index(), on = "business_id", how = "left", suffixes = ["_rev", "_biz"])
+    res = pd.merge(res, user.reset_index(), on = "user_id", how = "left", suffixes = ["_rev", "_user"])
+    res = res.drop(["user_id", "business_id"], axis = 1)
+    res = res.set_index("review_id")
+    ## TODO impute missing values with median
+    nulls = ["average_stars", "review_count_user", "votes_cool",
+             "votes_funny", "votes_useful_user", "log_review_count",
+             "votes_useful_ave"]
+    res[nulls] = res[nulls].apply(imputeMedian)
+    ## add some features
+    res["user_rev_stars_diff"] = res.average_stars - res.stars_rev
+    res["user_biz_stars_diff"] =  res.average_stars - res.stars_biz 
+    res["rev_biz_stars_diff"] = res.stars_rev - res.stars_biz
+    return(res)
 
-def processUsers(users):
-    ## test users have no votes
-    # users["user_ave_votes_cool"] = users.apply(lambda user: user.votes_cool / user.review_count, axis = 1)
-    # users["user_ave_votes_funny"] = users.apply(lambda user: user.votes_funny / user.review_count, axis = 1)
-    # cusers["user_ave_votes_usful"] = users.apply(lambda user: user.votes_useful / user.review_count, axis = 1)
-    users = users.drop(["name", "type"], axis = 1)
-    users["log_review_count"] = users.review_count.map(math.log)
-    return(users)
 
 
-print("handling businesses")
-busyFeatTrain = processBusinessess(businesses_train, checkins_train)
-busyFeatTest = processBusinessess(businesses_test, checkins_test)
+
+
 
 print("handling reviews")
-revFeatTest = processReviews(reviews_test)
-revFeatTrain = processReviews(reviews_train)
-
-print("handling users")
-userFeatTest = processUsers(users_test)
-userFeatTrain = processUsers(users_train)
-
-
-print("merging")
 print("   test")
-
-revBusTest = pd.merge(revFeatTest, busyFeatTest, on = "business_id", how = "left", suffixes = ("_rev", "_biz"))
-featuresTest = pd.merge(revBusTest, userFeatTest, on = "user_id", how = "left", suffixes = ("_rev", "_user"))
-featuresTest.to_csv(test_path + "features-test.csv")
-
+featuresTest = processReviews(reviews_test)
 print("   train")
-revBusTrain = pd.merge(revFeatTrain,  busyFeatTrain, on = "business_id", how = "left", suffixes = ("_rev", "_biz"))
-featuresTrain = pd.merge(revBusTrain, userFeatTrain, on = "user_id", how = "left", suffixes = ("_rev", "_user"))
-featuresTrain.to_csv(train_path + "features-train.csv")
+features = processReviews(reviews_train)
+
+print("writing files")
+features.to_csv("./data/train/features-train.csv")
+featuresTest.to_csv("./data/test/features-test.csv")
+

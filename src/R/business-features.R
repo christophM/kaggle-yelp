@@ -24,9 +24,17 @@ checkins$n_checkins <- apply(checkins[-1], 1, function(x) sum(x, na.rm = TRUE))
 
 checkins <- checkins[c("business_id", "n_checkins")]
 
+cr = checkins["business_id"]
+br = businesses["business_id"]
+x <- merge(br, cr, all.x = TRUE, all.y = FALSE)
+head(checkins)
+head(businesses)
+length(intersect(businesses$business_id, checkins$business_id)) / length(unique(checkins$business_id))
+businesses2 <- merge(businesses, checkins, all.x = TRUE, by = "business_id")
+nrow(businesses2) / nrow(businesses)
 
-businesses <- merge(businesses, checkins, by = "business_id", all.x = TRUE)
 
+businesses <- businesses2
 businesses$n_checkins[is.na(businesses$n_checkins)] <- 0
 
 save(businesses, file = "./data/rdata/business-features.RData")
