@@ -7,17 +7,26 @@ data_path = "./data/"
 test_path = data_path + "test/"
 train_path = data_path + "train/"
 
+def readBusiness(filename):
+    return  pd.read_csv(filename, header = 0, index_col = "business_id")
+
+def readCheckin(filename):
+    return readBusiness(filename)
+
+def combineTestTrain(train, test):
+    data = train.combine_first(test)
+    return data.drop_duplicates()
+
 print("Reading files: ")
 print("  business")
-businesses_train = pd.read_csv(train_path + "yelp_academic_dataset_business.csv", header = 0, index_col = "business_id")
-businesses_test = pd.read_csv(test_path + "yelp_test_set_business.csv", header = 0, index_col = "business_id")
-business = businesses_train.combine_first(businesses_test)
-business = business.drop_duplicates()
+businesses_train = readBusiness(train_path + "yelp_academic_dataset_business.csv")
+businesses_test = readBusiness(test_path + "yelp_test_set_business.csv")
+business = combineTestTrain(businesses_train, businesses_test)
 
 
 print("  checkins")
-checkins_train = pd.read_csv(train_path + "yelp_academic_dataset_checkin.csv", header = 0, index_col = "business_id")
-checkins_test = pd.read_csv(test_path + "yelp_test_set_checkin.csv", header = 0, index_col = "business_id")
+checkins_train = readCheckin(train_path + "yelp_academic_dataset_checkin.csv")
+checkins_test = readCheckin(test_path + "yelp_test_set_checkin.csv")
 checkin = checkins_train.combine_first(checkins_test)
 checkin = checkin.fillna(0)
 checkin = checkin.drop("type", axis = 1)
@@ -29,6 +38,7 @@ checkin = checkin.reindex(business.index)
 checkin = checkin.fillna(0)
 
 # TODO handle categories
+# TODO handle cities
 
 # combine business and checkin information
 business = business.combine_first(checkin)
@@ -79,7 +89,7 @@ def processReviews(reviews):
     res = pd.merge(res, user.reset_index(), on = "user_id", how = "left", suffixes = ["_rev", "_user"])
     res = res.drop(["user_id", "business_id"], axis = 1)
     res = res.set_index("review_id")
-    ## TODO impute missing values with median
+    ## impute missing values with median
     nulls = ["average_stars", "review_count_user", "votes_cool",
              "votes_funny", "votes_useful_user", "log_review_count",
              "votes_useful_ave"]
