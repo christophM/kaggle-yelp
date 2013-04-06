@@ -1,6 +1,7 @@
 import pandas as pd
 import math
 from datetime import datetime
+from text_features import getTextFeatures
 
 
 def readBusiness(filename):
@@ -55,7 +56,7 @@ def getUserFeatures(user):
 def imputeMedian(column):
     return column.fillna(column.median())
 
-def processReviews(reviews, business, user):
+def processReviews(reviews, business, user, text_features):
     ## some date features
     reviews.date = reviews.date.map(pd.to_datetime)
     reviews['month'] = reviews.date.map(lambda x: x.month)
@@ -79,6 +80,8 @@ def processReviews(reviews, business, user):
     res["user_rev_stars_diff"] = res.average_stars - res.stars_rev
     res["user_biz_stars_diff"] =  res.average_stars - res.stars_biz 
     res["rev_biz_stars_diff"] = res.stars_rev - res.stars_biz
+
+    res = res.combine_first(text_features)
     return(res)
 
 def main():
@@ -89,17 +92,17 @@ def main():
     print("  business")
     businesses_train = readBusiness(train_path + "yelp_academic_dataset_business.csv")
     businesses_test = readBusiness(test_path + "yelp_test_set_business.csv")
-    business = combineTestTrain(businesses_train, businesses_test)
+    business_raw = combineTestTrain(businesses_train, businesses_test)
     
     print("  checkins")
     checkins_train = readCheckin(train_path + "yelp_academic_dataset_checkin.csv")
     checkins_test = readCheckin(test_path + "yelp_test_set_checkin.csv")
     checkin = combineTestTrain(checkins_train, checkins_test)
-    checkin = processCheckin(checkin, business.index)
+    checkin = processCheckin(checkin, business_raw.index)
 
     # TODO handle categories
     # TODO handle cities
-    business = getBusinessFeatures(business, checkin)
+    business = getBusinessFeatures(business_raw, checkin)
 
     print("  reviews")
     print("      train")
@@ -114,12 +117,18 @@ def main():
     user = combineTestTrain(users_train, users_test)
     user = getUserFeatures(user)
 
+    print("getting text feature")
+    textFeaturesTrain  = getTextFeatures(reviews_train, business_raw)
+    textFeaturesTest  = getTextFeatures(reviews_test, business_raw)
+    
     print("handling reviews")
     print("   test")
-    featuresTest = processReviews(reviews_test, business, user)
+    featuresTest = processReviews(reviews_test, business, user, textFeaturesTest)
     print("   train")
-    features = processReviews(reviews_train, business, user)
+    features = processReviews(reviews_train, business, user, textFeaturesTrain)
     features
+
+    
     
     print("writing files")
     features.to_csv("./data/train/features-train.csv")
