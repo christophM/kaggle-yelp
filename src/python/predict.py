@@ -11,7 +11,7 @@ test_features = test_features.set_index("review_id")
 
 print("loading model")
 ## load model
-filename = "./models/2013-04-05-rf_regressor.joblib.pkl"
+filename = "./models/2013-04-06-rf_regressor.joblib.pkl"
 model = joblib.load(filename)
 
 print("predicting...")
@@ -22,4 +22,4 @@ test_features["prediction"] = np.exp(prediction) -1
 
 print("writing results to disk")
 test_features = test_features["prediction"]
-test_features.to_csv("./submissions/2013-04-05.csv")
+test_features.to_csv("./submissions/2013-04-06.csv")
