@@ -22,4 +22,4 @@ test_features["prediction"] = np.exp(prediction) -1
 
 print("writing results to disk")
 test_features = test_features["prediction"]
-test_features.to_csv("./submissions/2013-04-06.csv")
+test_features.to_csv("./submissions/2013-04-06-text-features.csv")
