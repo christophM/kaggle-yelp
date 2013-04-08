@@ -13,7 +13,7 @@ features = data.drop(["votes_useful", "city", "date"], axis = 1)
 features = features.set_index("review_id")
 target = data.votes_useful.map(lambda x: np.log(x + 1))
 np.random.seed(42)
-model = RandomForestRegressor(compute_importances = True, oob_score = True, verbose = 2, n_jobs = 2, n_estimators = 60, max_features = "sqrt")
+model = RandomForestRegressor(compute_importances = True, oob_score = True, verbose = 2, n_jobs = 2, n_estimators = 70, max_features = "sqrt")
 print("fitting model")
 model.fit(features, target)
 
