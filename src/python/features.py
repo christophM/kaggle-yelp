@@ -56,13 +56,19 @@ def getUserFeatures(user):
 def imputeMedian(column):
     return column.fillna(column.median())
 
-def processReviews(reviews, business, user, text_features):
+def processReviews(reviews, business, user, text_features, data_type):
     ## some date features
     reviews.date = reviews.date.map(pd.to_datetime)
     reviews['month'] = reviews.date.map(lambda x: x.month)
     reviews['year'] = reviews.date.map(lambda x: x.year)
     reviews['weekday'] = reviews.date.map(lambda x: x.weekday())
-    reviews['date_numeric_days'] = reviews.date.map(lambda x: (x - datetime(1970, 1, 1)).days)
+    if (data_type == "train"):
+        reviews['time_offset'] = reviews.date.map(lambda x: (datetime(2013, 1, 19) - x).days)
+    elif (data_type == "test"):
+        reviews['time_offset'] = reviews.date.map(lambda x: (datetime(2013, 3, 12) - x).days)
+    else:
+        raise (Exception("data_type must be train or test"))
+
     ## drop the text
     reviews = reviews.drop(["text", "type"], axis = 1)
     ## merge with user and business
@@ -117,15 +123,15 @@ def main():
     user = combineTestTrain(users_train, users_test)
     user = getUserFeatures(user)
 
-    print("getting text feature")
+    print("getting text features")
     textFeaturesTrain  = getTextFeatures(reviews_train, business_raw)
     textFeaturesTest  = getTextFeatures(reviews_test, business_raw)
     
     print("handling reviews")
     print("   test")
-    featuresTest = processReviews(reviews_test, business, user, textFeaturesTest)
+    featuresTest = processReviews(reviews_test, business, user, textFeaturesTest, "test")
     print("   train")
-    features = processReviews(reviews_train, business, user, textFeaturesTrain)
+    features = processReviews(reviews_train, business, user, textFeaturesTrain, "train")
     features
 
     

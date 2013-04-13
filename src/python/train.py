@@ -17,15 +17,16 @@ model = RandomForestRegressor(compute_importances = True, oob_score = True, verb
 print("fitting model")
 model.fit(features, target)
 
-importances = model.feature_importances_
-indices = np.argsort(importances)[::-1]
-print("-------------------------------------------------------------------------")
-print("Score on training data: " + str(model.score(features, target)))
-print("Feature ranking:")
-for f in xrange(importances.length - 1):
-    print "%d. feature %s (%f)" % (f + 1, features.columns[f], importances[indices[f]])
 print("-------------------------------------------------------------------------")
 print("writing model to disk")
 # save random forest    
 filename = "./models/2013-04-13-rf_regressor.joblib.pkl"
 _ = joblib.dump(model, filename, compress = 0)
+
+importances = model.feature_importances_
+indices = np.argsort(importances)[::-1]
+print("-------------------------------------------------------------------------")
+print("Score on training data: " + str(model.score(features, target)))
+print("Feature ranking:")
+for f in xrange(importances.size - 1):
+    print "%d. feature %s (%f)" % (f + 1, features.columns[f], importances[indices[f]])
