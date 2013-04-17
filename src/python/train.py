@@ -11,13 +11,11 @@ def readReviews(filename):
     target = data.votes_useful.map(lambda x: np.log(x + 1))
     return target, features
 
-
     
 print("reading data")
 target, features = readReviews("./data/train/features-train.csv")
 target_inTrain, features_inTrain = readReviews("./data/train/features-inTrain.csv")
 target_inTest, features_inTest = readReviews("./data/train/features-inTest.csv")
-
 
 np.random.seed(42)
 model = RandomForestRegressor(compute_importances = True, oob_score = True, verbose = 2, n_jobs = 2, n_estimators = 60, max_features = "sqrt")
