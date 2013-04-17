@@ -56,19 +56,14 @@ def getUserFeatures(user):
 def imputeMedian(column):
     return column.fillna(column.median())
 
-def processReviews(reviews, business, user, text_features, data_type):
+def processReviews(reviews, business, user, text_features, cutoff_date):
     ## some date features
-    reviews.date = reviews.date.map(pd.to_datetime)
+    reviews["date"] = reviews.date.map(pd.to_datetime)
+    reviews = reviews.ix[reviews.date < cutoff_date].copy()
     reviews['month'] = reviews.date.map(lambda x: x.month)
     reviews['year'] = reviews.date.map(lambda x: x.year)
     reviews['weekday'] = reviews.date.map(lambda x: x.weekday())
-    if (data_type == "train"):
-        reviews['time_offset'] = reviews.date.map(lambda x: (datetime(2013, 1, 19) - x).days)
-    elif (data_type == "test"):
-        reviews['time_offset'] = reviews.date.map(lambda x: (datetime(2013, 3, 12) - x).days)
-    else:
-        raise (Exception("data_type must be train or test"))
-
+    reviews['time_offset'] = reviews.date.map(lambda x: (cutoff_date - x).days)
     ## drop the text
     reviews = reviews.drop(["text", "type"], axis = 1)
     ## merge with user and business
@@ -86,8 +81,8 @@ def processReviews(reviews, business, user, text_features, data_type):
     res["user_rev_stars_diff"] = res.average_stars - res.stars_rev
     res["user_biz_stars_diff"] =  res.average_stars - res.stars_biz 
     res["rev_biz_stars_diff"] = res.stars_rev - res.stars_biz
-
     res = res.combine_first(text_features)
+    res = res.dropna(how = "any")
     return(res)
 
 def main():
@@ -99,17 +94,14 @@ def main():
     businesses_train = readBusiness(train_path + "yelp_academic_dataset_business.csv")
     businesses_test = readBusiness(test_path + "yelp_test_set_business.csv")
     business_raw = combineTestTrain(businesses_train, businesses_test)
-    
     print("  checkins")
     checkins_train = readCheckin(train_path + "yelp_academic_dataset_checkin.csv")
     checkins_test = readCheckin(test_path + "yelp_test_set_checkin.csv")
     checkin = combineTestTrain(checkins_train, checkins_test)
     checkin = processCheckin(checkin, business_raw.index)
-
     # TODO handle categories
     # TODO handle cities
     business = getBusinessFeatures(business_raw, checkin)
-
     print("  reviews")
     print("      train")
     reviews_train = readReview(train_path + "yelp_academic_dataset_review.csv")
@@ -122,23 +114,24 @@ def main():
     ## merge users
     user = combineTestTrain(users_train, users_test)
     user = getUserFeatures(user)
-
     print("getting text features")
     textFeaturesTrain  = getTextFeatures(reviews_train, business_raw)
     textFeaturesTest  = getTextFeatures(reviews_test, business_raw)
-    
     print("handling reviews")
     print("   test")
-    featuresTest = processReviews(reviews_test, business, user, textFeaturesTest, "test")
+    featuresTest = processReviews(reviews_test, business, user, textFeaturesTest, datetime(2013, 3, 12))
+    assert(featuresTest.index.size == 22956)
     print("   train")
-    features = processReviews(reviews_train, business, user, textFeaturesTrain, "train")
-    features
-
-    
-    
+    features = processReviews(reviews_train, business, user, textFeaturesTrain, datetime(2013, 1, 19))
+    assert(features.index.size == 229907)
+    inTrain = processReviews(reviews_train, business, user, textFeaturesTrain, datetime(2012, 5, 1))
+    inTest = features.ix[features.index.diff(inTrain.index)].copy()
+    assert(inTrain.index.size + inTest.index.size == features.index.size)
     print("writing files")
     features.to_csv("./data/train/features-train.csv")
     featuresTest.to_csv("./data/test/features-test.csv")
+    inTrain.to_csv("./data/train/features-inTrain.csv")
+    inTest.to_csv("./data/train/features-inTest.csv")
 
 
 if __name__ == "__main__":
