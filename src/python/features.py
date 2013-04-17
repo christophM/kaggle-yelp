@@ -125,13 +125,15 @@ def main():
     features = processReviews(reviews_train, business, user, textFeaturesTrain, datetime(2013, 1, 19))
     assert(features.index.size == 229907)
     inTrain = processReviews(reviews_train, business, user, textFeaturesTrain, datetime(2012, 5, 1))
-    inTest = features.ix[features.index.diff(inTrain.index)].copy()
+    inTest_indices = features.index.diff(inTrain.index)
+    inTest = features.copy().ix[inTest_indices]
+    inTest = inTest.reset_index().rename(columns = {"index": "review_id"})
     assert(inTrain.index.size + inTest.index.size == features.index.size)
     print("writing files")
     features.to_csv("./data/train/features-train.csv")
     featuresTest.to_csv("./data/test/features-test.csv")
     inTrain.to_csv("./data/train/features-inTrain.csv")
-    inTest.to_csv("./data/train/features-inTest.csv")
+    inTest.to_csv("./data/train/features-inTest.csv", index = False)
 
 
 if __name__ == "__main__":
