@@ -11,14 +11,14 @@ def readReviews(filename):
     target = data.votes_useful.map(lambda x: np.log(x + 1))
     return target, features
 
-    
+     
 print("reading data")
 target, features = readReviews("./data/train/features-train.csv")
 target_inTrain, features_inTrain = readReviews("./data/train/features-inTrain.csv")
 target_inTest, features_inTest = readReviews("./data/train/features-inTest.csv")
 
 np.random.seed(42)
-model = RandomForestRegressor(compute_importances = True, oob_score = True, verbose = 2, n_jobs = 2, n_estimators = 60, max_features = "sqrt")
+model = RandomForestRegressor(compute_importances = True, oob_score = True, verbose = 2, n_jobs = 2, n_estimators = 50, max_features = "sqrt")
 print("fitting model")
 model.fit(features_inTrain, target_inTrain)
 predicted = np.exp(model.predict(features_inTest)) - 1
@@ -30,8 +30,8 @@ print("Refitting model with whole training data")
 model.fit(features, target)
 print("writing model to disk")
 # save random forest
-filename = "./models/2013-04-13-rf_regressor.joblib.pkl"
-#_ = joblib.dump(model, filename, compress = 0)
+filename = "./models/2013-04-21-rf_regressor.joblib.pkl"
+_ = joblib.dump(model, filename, compress = 0)
 
 importances = model.feature_importances_
 indices = np.argsort(importances)[::-1]

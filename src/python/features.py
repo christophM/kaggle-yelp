@@ -1,8 +1,6 @@
 import pandas as pd
 import math
 from datetime import datetime
-from text_features import getTextFeatures
-
 
 def readBusiness(filename):
     return  pd.read_csv(filename, header = 0, index_col = "business_id")
@@ -15,6 +13,9 @@ def readReview(filename):
 
 def readUser(filename):
      return pd.read_csv(filename, header = 0, index_col = "user_id")
+
+def readTextFeatures(filename):
+    return pd.read_csv(filename, header = 0, index_col = "review_id")
 
 def combineTestTrain(train, test):
     data = train.combine_first(test)
@@ -115,8 +116,8 @@ def main():
     user = combineTestTrain(users_train, users_test)
     user = getUserFeatures(user)
     print("getting text features")
-    textFeaturesTrain  = getTextFeatures(reviews_train, business_raw)
-    textFeaturesTest  = getTextFeatures(reviews_test, business_raw)
+    textFeaturesTrain  = readTextFeatures("./data/train/features-text-train.csv")
+    textFeaturesTest  = readTextFeatures("./data/test/features-text-test.csv")
     print("handling reviews")
     print("   test")
     featuresTest = processReviews(reviews_test, business, user, textFeaturesTest, datetime(2013, 3, 12))
