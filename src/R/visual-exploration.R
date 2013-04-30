@@ -6,7 +6,7 @@
 library("ggplot2")
 dat <- read.csv("./data/train/features-train.csv")
 
-dat$log_y <- log(dat$votes_useful)
+dat$log_y <- log(dat$votes_useful + 1)
 
 p <- ggplot(dat, aes(y = log_y))
 
@@ -17,4 +17,4 @@ p + geom_point(aes(x = count_exmarks))
 p + geom_point(aes(x = average_stars), position = position_jitter())
 
 ## location:
-p + geom_point(aes(x = longitude, y = latitude, alpha = log_y))
+p + geom_point(aes(x = longitude, y = latitude, colour = log_y), size = 1.8)
