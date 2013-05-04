@@ -25,6 +25,15 @@ predicted = np.exp(model.predict(features_inTest)) - 1
 actual = target_inTest
 print("Rmsle score: " + str(rmsle(actual, predicted)))
 
+## Print test set error
+## Input the RandomForestRegressor, test set feature and test set known values
+def rfErrCurve(rf_model,test_X,test_y):
+    p = []
+    for i,tree in enumerate(rf_model.estimators_):
+                p.insert(i,tree.predict(test_X))
+                print rmsle(np.mean(p,axis=0),test_y)
+print("error curve: ")
+print(rfErrCurve(model, features_inTest, actual))
 print("-------------------------------------------------------------------------")
 print("Refitting model with whole training data")
 model.fit(features, target)
