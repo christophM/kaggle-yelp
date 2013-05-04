@@ -73,13 +73,6 @@ def processReviews(reviews, business, user, text_features, cutoff_date):
     reviews = reviews.reset_index()
     res = pd.merge(reviews, business.reset_index(), on = "business_id", how = "left", suffixes = ["_rev", "_biz"])
     res = pd.merge(res, user.reset_index(), on = "user_id", how = "left", suffixes = ["_rev", "_user"])
-    ## number of reviews per biz
-    biz_freq = dict(res.business_id.value_counts())
-    res["n_reviews_biz"] = res.apply(lambda x: biz_freq.get(x["business_id"]), axis = 1)
-    res["n_reviews_biz_log"] = np.log(res.n_reviews_biz)
-    user_freq = dict(res.user_id.value_counts())
-    res["n_reviews_user"] = res.apply(lambda x: user_freq.get(x["user_id"]), axis = 1)
-    res["n_reviews_user_log"] = np.log(res.n_reviews_user)
     res = res.drop(["user_id", "business_id"], axis = 1)
     res = res.set_index("review_id")
     ## impute missing values with median
