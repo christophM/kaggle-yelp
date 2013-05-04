@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import math
 from datetime import datetime
 
@@ -65,6 +66,7 @@ def processReviews(reviews, business, user, text_features, cutoff_date):
     reviews['year'] = reviews.date.map(lambda x: x.year)
     reviews['weekday'] = reviews.date.map(lambda x: x.weekday())
     reviews['time_offset'] = reviews.date.map(lambda x: (cutoff_date - x).days)
+    reviews['log_time_offset'] = np.log(reviews.time_offset)
     ## drop the text
     reviews = reviews.drop(["text", "type"], axis = 1)
     ## merge with user and business
