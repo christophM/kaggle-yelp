@@ -10,7 +10,15 @@ def readReviews(filename):
     features = data.drop(["votes_useful", "city", "date"], axis = 1).set_index("review_id")
     target = data.votes_useful.map(lambda x: np.log(x + 1))
     return target, features
-
+    
+def importances(model):
+    importances = model.feature_importances_
+    indices = np.argsort(importances)[::-1]
+    print("-------------------------------------------------------------------------")
+    print("Score on training data: " + str(model.score(features, target)))
+    print("Feature ranking:")
+    for f in xrange(importances.size - 1):
+        print "%d. feature %s (%f)" % (f + 1, features.columns[f], importances[indices[f]])
      
 print("reading data")
 target, features = readReviews("./data/train/features-train.csv")
@@ -18,13 +26,13 @@ target_inTrain, features_inTrain = readReviews("./data/train/features-inTrain.cs
 target_inTest, features_inTest = readReviews("./data/train/features-inTest.csv")
 
 np.random.seed(42)
-model = RandomForestRegressor(compute_importances = True, oob_score = True, verbose = 2, n_jobs = 2, n_estimators = 50, max_features = "sqrt")
-print("fitting model")
+model = RandomForestRegressor(compute_importances = True, oob_score = True, verbose = 2, n_jobs = 2, n_estimators = 45, max_features = 2)
+print("fitting model on " + str(len(features.columns)) + " features")
 model.fit(features_inTrain, target_inTrain)
 predicted = np.exp(model.predict(features_inTest)) - 1
 actual = target_inTest
 print("Rmsle score: " + str(rmsle(actual, predicted)))
-
+importances(model)
 ## Print test set error
 ## Input the RandomForestRegressor, test set feature and test set known values
 def rfErrCurve(rf_model,test_X,test_y):
@@ -42,10 +50,5 @@ print("writing model to disk")
 filename = "./models/rf_regressor.joblib.pkl"
 _ = joblib.dump(model, filename, compress = 0)
 
-importances = model.feature_importances_
-indices = np.argsort(importances)[::-1]
-print("-------------------------------------------------------------------------")
-print("Score on training data: " + str(model.score(features, target)))
-print("Feature ranking:")
-for f in xrange(importances.size - 1):
-    print "%d. feature %s (%f)" % (f + 1, features.columns[f], importances[indices[f]])
+importances(model)
+
