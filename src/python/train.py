@@ -26,7 +26,7 @@ target_inTrain, features_inTrain = readReviews("./data/train/features-inTrain.cs
 target_inTest, features_inTest = readReviews("./data/train/features-inTest.csv")
 
 np.random.seed(42)
-model = RandomForestRegressor(compute_importances = True, oob_score = True, verbose = 2, n_jobs = 2, n_estimators = 45, max_features = 2)
+model = RandomForestRegressor(compute_importances = True, oob_score = True, verbose = 2, n_jobs = 2, n_estimators = 45, max_features = "sqrt")
 print("fitting model on " + str(len(features.columns)) + " features")
 model.fit(features_inTrain, target_inTrain)
 predicted = np.exp(model.predict(features_inTest)) - 1
