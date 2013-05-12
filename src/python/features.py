@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn import preprocessing
 import math
 from datetime import datetime
 
@@ -36,6 +37,10 @@ def processCheckin(checkin, index):
 def getBusinessFeatures(business, checkin):
     # combine business and checkin information
     business = business.combine_first(checkin)
+    categories = np.hstack(business.categories.map(lambda x: np.array(str(x).split(","))).values.flat)
+    ## find cutoff take biggest 10 or 20 categories
+    # categories_red = 
+    ## write a Feature Encoder
     business = business.drop(["categories", "full_address", "neighborhoods", "name", "state", "type"], axis = 1)
     city_freq = dict(business.city.value_counts())
     frequent_cities = dict( (k, v) for k, v in city_freq.items() if v > 100).keys()

@@ -39,7 +39,7 @@ print("Refitting model with whole training data")
 model.fit(features, target)
 print("writing model to disk")
 # save random forest
-filename = "./models/2013-04-21-rf_regressor.joblib.pkl"
+filename = "./models/rf_regressor.joblib.pkl"
 _ = joblib.dump(model, filename, compress = 0)
 
 importances = model.feature_importances_

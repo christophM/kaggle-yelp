@@ -2,9 +2,19 @@ import pandas as pd
 import nltk 
 import re
 from features import readBusiness, readReview, combineTestTrain
+from sklearn.feature_extraction import DictVectorizer
 
-#def countOccurences(text, words):
-    ## tokenize by word
+
+def pos_tag_text(text):
+    words = nltk.word_tokenize(text)
+    text_length = float(len(words))
+    pos_tags  = nltk.pos_tag(words)
+    counts = {}
+    for word, pos in pos_tags:
+        count = counts.setdefault(pos, 0)
+        counts[pos] = count + 1.0 / text_length
+    print(counts)
+    return(counts)
 
 def countSymbols(text, symbol):
     return text.count(symbol)
@@ -36,12 +46,24 @@ def countOccurencesOfBizName(text, biz_name):
 def countCapitalLetters(text):
     return len(re.findall("[A-Z]", text))
 
+def ARI(nchars, nwords, nsents):
+    return 4.71 * (nchars/ nwords) + 0.5 * (nwords / nsents) - 21.43
+
+def CLI(nchars, nwords, nsents):
+    return 0.0588 * (nchars / nwords) - 0.296 * (nsents / nwords) - 15.8
+
+
 
 # TODO normalize (by textlength or tfidf)
 def getTextFeatures(review, business):
     data = review.reset_index().merge(business, left_on = "business_id", right_index = True, how = "left").set_index("review_id")
     textFeatures = pd.DataFrame(index = data.index)
     data["text"] = data.text.map(lambda x: x if type(x) == type(str()) else "")
+    #print("Getting POS features")
+    #vec = DictVectorizer()
+    #pos_dicts = data.text.map(pos_tag_text).values
+    #pos_features = vec.fit_transform(pos_dicts).toarray()
+    #pos_dataFrame = pd.DataFrame(pos_features, index = textFeatures.index, columns = vec.get_feature_names())
     print("counting")
     textFeatures["count_capital_letters"] = data.text.map(countCapitalLetters)
     textFeatures["count_text_biz_name"] = data.apply(lambda x: countOccurencesOfBizName(x["text"], x["name"]), axis = 1, raw = True)
@@ -52,9 +74,13 @@ def getTextFeatures(review, business):
     textFeatures["number_of_words"] = data.text.map(numberOfWords)
     textFeatures["number_of_sentences"] = data.text.map(numberOfSentences)
     textlengths = data.text.map(lengthOfText)
-    #textFeatures.apply(lambda x: (float(x) / float(textlengths)), axis = 0)
-    textFeatures.fillna(0.0)
-    textFeatures["length_of_text"] = textlengths
+    #textFeatures = textFeatures.apply(lambda x: (float(x) / float(textlengths)), axis = 0)
+    textFeatures = textFeatures.fillna(0.0)
+    textFeatures["textlength"] = textlengths
+    print("readability indices")
+    textFeatures["ARI_Readability"] = ARI(textFeatures["textlength"], textFeatures["number_of_words"], textFeatures["number_of_sentences"])
+    textFeatures["CLI_Readability"] = CLI(textFeatures["textlength"], textFeatures["number_of_words"], textFeatures["number_of_sentences"])
+    #return textFeatures.combine_first(pos_dataFrame)
     return textFeatures
     
 def main():
