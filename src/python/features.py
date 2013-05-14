@@ -54,6 +54,7 @@ def getUserFeatures(user):
     ## add feature
     user["log_review_count"] = user.review_count.map(math.log)
     user["votes_useful_ave"] = user.votes_useful_user / (user.review_count + 1)
+    user["votes_useful_ave_log"] = np.log(user.votes_useful_ave + 1)
     ## drop unused
     user = user.drop(["name", "type"], axis = 1)
     user = user.drop_duplicates()
@@ -83,7 +84,7 @@ def processReviews(reviews, business, user, text_features, cutoff_date):
     ## impute missing values with median
     nulls = ["average_stars", "review_count_user", "votes_cool",
              "votes_funny", "votes_useful_user", "log_review_count",
-             "votes_useful_ave"]
+             "votes_useful_ave", "votes_useful_ave_log"]
     res[nulls] = res[nulls].apply(imputeMedian)
     ## add some features
     res["user_rev_stars_diff"] = res.average_stars - res.stars_rev
