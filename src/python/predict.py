@@ -12,7 +12,7 @@ test_features = test_features.set_index("review_id")
 
 print("loading model")
 ## load model
-filename = "./models/rf_regressor.joblib.pkl"
+filename = "./models/gbm_regressor.joblib.pkl"
 model = joblib.load(filename)
 
 print("predicting...")
