@@ -20,7 +20,7 @@ target_inTest, features_inTest = readReviews("./data/train/features-inTest.csv")
 
 ################################################################################
 np.random.seed(42)
-params = {'n_estimators': 100, 'max_depth': 5, 'min_samples_split': 2, 'loss': 'ls', 'verbose': 2}
+params = {'n_estimators': 100, 'max_depth': 5, 'min_samples_split': 2, 'loss': 'ls', 'verbose': 2, 'subsample': 0.5}
 model = GradientBoostingRegressor(**params)
 print("fitting model on " + str(len(features.columns)) + " features")
 model.fit(features_inTrain, target_inTrain)
