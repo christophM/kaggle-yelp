@@ -86,6 +86,8 @@ def processReviews(reviews, business, user, text_features, cutoff_date):
              "votes_funny", "votes_useful_user", "log_review_count",
              "votes_useful_ave", "votes_useful_ave_log"]
     res[nulls] = res[nulls].apply(imputeMedian)
+    ## users with private profile
+    res["private_profile"] = res.private_profile.fillna(3)
     ## add some features
     res["user_rev_stars_diff"] = res.average_stars - res.stars_rev
     res["user_biz_stars_diff"] =  res.average_stars - res.stars_biz 
@@ -119,7 +121,9 @@ def main():
     reviews_test = readReview(test_path + "yelp_test_set_review.csv")
     print("  users")
     users_train = readUser(train_path + "yelp_academic_dataset_user.csv")
+    users_train["private_profile"] = pd.Series(np.zeros(users_train.shape[0]), index = users_train.index)
     users_test = readUser(test_path + "yelp_test_set_user.csv")
+    users_test["private_profile"] = pd.Series(np.ones(users_test.shape[0]), index = users_test.index)
     ## merge users
     user = combineTestTrain(users_train, users_test)
     user = getUserFeatures(user)
