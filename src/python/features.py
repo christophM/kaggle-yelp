@@ -87,7 +87,7 @@ def processReviews(reviews, business, user, text_features, cutoff_date):
              "votes_useful_ave", "votes_useful_ave_log"]
     res[nulls] = res[nulls].apply(imputeMedian)
     ## users with private profile
-    res["private_profile"] = res.private_profile.fillna(3)
+    res["private_profile"] = res.private_profile.fillna(2)
     ## add some features
     res["user_rev_stars_diff"] = res.average_stars - res.stars_rev
     res["user_biz_stars_diff"] =  res.average_stars - res.stars_biz 
