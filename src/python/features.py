@@ -57,7 +57,6 @@ def getUserFeatures(user):
     user["votes_useful_ave_log"] = np.log(user.votes_useful_ave + 1)
     ## drop unused
     user = user.drop(["name", "type"], axis = 1)
-    user = user.drop_duplicates()
     return user 
     
 
@@ -81,11 +80,6 @@ def processReviews(reviews, business, user, text_features, cutoff_date):
     res = pd.merge(res, user.reset_index(), on = "user_id", how = "left", suffixes = ["_rev", "_user"])
     res = res.drop(["user_id", "business_id"], axis = 1)
     res = res.set_index("review_id")
-    ## impute missing values with median
-    nulls = ["average_stars", "review_count_user", "votes_cool",
-             "votes_funny", "votes_useful_user", "log_review_count",
-             "votes_useful_ave", "votes_useful_ave_log"]
-    res[nulls] = res[nulls].apply(imputeMedian)
     ## users with private profile
     res["private_profile"] = res.private_profile.fillna(2)
     ## add some features
@@ -93,7 +87,6 @@ def processReviews(reviews, business, user, text_features, cutoff_date):
     res["user_biz_stars_diff"] =  res.average_stars - res.stars_biz 
     res["rev_biz_stars_diff"] = res.stars_rev - res.stars_biz
     res = res.combine_first(text_features)
-    res = res.dropna(how = "any")
     return(res)
 
 def main():
@@ -121,7 +114,6 @@ def main():
     reviews_test = readReview(test_path + "yelp_test_set_review.csv")
     print("  users")
     users_train = readUser(train_path + "yelp_academic_dataset_user.csv")
-    users_train["private_profile"] = pd.Series(np.zeros(users_train.shape[0]), index = users_train.index)
     users_test = readUser(test_path + "yelp_test_set_user.csv")
     users_test["private_profile"] = pd.Series(np.ones(users_test.shape[0]), index = users_test.index)
     ## merge users
