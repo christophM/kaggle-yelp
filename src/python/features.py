@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn import preprocessing
+from sklearn.feature_extraction import DictVectorizer
 import math
 from datetime import datetime
 
@@ -37,9 +38,19 @@ def processCheckin(checkin, index):
 def getBusinessFeatures(business, checkin):
     # combine business and checkin information
     business = business.combine_first(checkin)
-    categories = np.hstack(business.categories.map(lambda x: np.array(str(x).split(","))).values.flat)
     ## find cutoff take biggest 10 or 20 categories
-    # categories_red = 
+    cat_list = business.categories.fillna("").map(lambda x: str.split(x, ",")).values
+    freq_cats = pd.Series([category for categories in cat_list for category in categories]).value_counts().ix[1:40].index
+    dic_vec = DictVectorizer()
+    def cats_to_dict(cats):
+        result_dict = {}
+        for x in cats:
+            if x in freq_cats:
+                result_dict.setdefault(x, 1)  
+            return result_dict
+    category_features = dic_vec.fit_transform(business.categories.fillna("").map(lambda x: cats_to_dict(str.split(x, ","))).values).toarray()
+    cat_panda = pd.DataFrame(category_features, index = business.index, columns = dic_vec.feature_names_)
+    business = business.combine_first(cat_panda)
     ## write a Feature Encoder
     business = business.drop(["categories", "full_address", "neighborhoods", "name", "state", "type"], axis = 1)
     city_freq = dict(business.city.value_counts())
@@ -114,6 +125,7 @@ def main():
     reviews_test = readReview(test_path + "yelp_test_set_review.csv")
     print("  users")
     users_train = readUser(train_path + "yelp_academic_dataset_user.csv")
+    users_train["private_profile"] = pd.Series(np.zeros(users_train.shape[0]), index = users_train.index)
     users_test = readUser(test_path + "yelp_test_set_user.csv")
     users_test["private_profile"] = pd.Series(np.ones(users_test.shape[0]), index = users_test.index)
     ## merge users

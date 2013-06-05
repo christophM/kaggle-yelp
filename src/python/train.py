@@ -36,6 +36,8 @@ def eval_model(model, train, train_target, test, test_target, plot = True):
         pl.xlabel('Boosting Iterations')
         pl.ylabel('Deviance')
         ###############################################################################
+
+def plot_feature_importance(model, train):
         # Plot feature importance
         feature_importance = model.feature_importances_
         # make importances relative to max importance
@@ -44,14 +46,16 @@ def eval_model(model, train, train_target, test, test_target, plot = True):
         pos = np.arange(sorted_idx.shape[0]) + .5
         pl.subplot(1, 2, 2)
         pl.barh(pos, feature_importance[sorted_idx], align='center')
-        pl.yticks(pos, test.columns[sorted_idx])
+        pl.yticks(pos, train.columns[sorted_idx])
         pl.xlabel('Relative Importance')
         pl.title('Variable Importance')
         pl.show()
 
-def fit_and_save(model, featurez, target, filename):
+def fit_and_save(model, featurez, target, filename, plot = True):
     print "fitting " + filename
     model.fit(featurez, target)
+    if (plot):
+        plot_feature_importance(model, featurez)
     model_path = "./models/"
     print "writing " + filename + " to disk"
     _ = joblib.dump(model, model_path + filename, compress = 0)
@@ -67,7 +71,7 @@ user_full_features = np.array(['average_stars','review_count_user',  'votes_cool
 user_partial_features = np.array(['average_stars', 'review_count_user', 'log_review_count', 'user_biz_stars_diff', 'user_rev_stars_diff'])
 user_partial_drop = np.setdiff1d(user_full_features, user_partial_features)
 
-params = {'n_estimators': 5, 'max_depth': 5, 'min_samples_split': 2, 'loss': 'ls', 'verbose': 2, 'subsample': 0.5}
+params = {'n_estimators': 50, 'max_depth': 5, 'min_samples_split': 2, 'loss': 'ls', 'verbose': 2, 'subsample': 0.9}
 model = GradientBoostingRegressor(**params)
 
 ## model1: data with all user information
@@ -76,13 +80,13 @@ model = GradientBoostingRegressor(**params)
 ## subset: user_privacy = 1 + throw away some features
 ## model3: data with no user information
 ## subset: user_privacy = 3 + throw away all user features
-data_drop = [user_partial_drop, np.array([]), user_full_features]
-for drop_features in data_drop:
-    all_info_index = features_inTrain["private_profile"] == 0
-    all_info_index2 = features_inTest["private_profile"] == 0
-    train_features = features_inTrain[all_info_index].drop(drop_features, axis = 1).dropna(axis = 0)
-    test_features = features_inTest[all_info_index2].drop(drop_features, axis = 1).dropna(axis = 0)
-    eval_model(model, train_features, target_inTrain[all_info_index], test_features, target_inTest[all_info_index2], False)
+#data_drop = [user_partial_drop, np.array([]), user_full_features]
+#for drop_features in data_drop:
+#    all_info_index = features_inTrain["private_profile"] == 2
+#    all_info_index2 = features_inTest["private_profile"] == 2
+#    train_features = features_inTrain[all_info_index].drop(drop_features, axis = 1).dropna(axis = 0)
+#    test_features = features_inTest[all_info_index2].drop(drop_features, axis = 1).dropna(axis = 0)
+#    eval_model(model, train_features, target_inTrain[all_info_index], test_features, target_inTest[all_info_index2], False)
 
 
 ################################################################################
