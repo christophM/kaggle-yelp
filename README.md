@@ -1,0 +1,1 @@
+This is my approach for the kaggle Yelp-recruiting competition(http://www.kaggle.com/c/yelp-recruiting). Models were build with Python and the scikit-learn package. 
